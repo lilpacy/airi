@@ -34,6 +34,7 @@ import { useSpeechStore } from '../../stores/modules/speech'
 import { useProvidersStore } from '../../stores/providers'
 import { useSettings } from '../../stores/settings'
 import { useSpeechRuntimeStore } from '../../stores/speech-runtime'
+import { generateSpeechMiniMax } from '../../utils/minimax-tts'
 
 withDefaults(defineProps<{
   paused?: boolean
@@ -237,20 +238,48 @@ const playbackManager = createPlaybackManager<AudioBuffer>({
 
 const speechPipeline = createSpeechPipeline<AudioBuffer>({
   tts: async (request, signal) => {
+    console.log('[TTS] tts() called, provider:', activeSpeechProvider.value, 'text:', request.text)
     if (signal.aborted)
       return null
 
-    if (!activeSpeechProvider.value)
+    if (!activeSpeechProvider.value) {
+      console.warn('[TTS] No active speech provider')
       return null
+    }
+
+    if (!request.text && !request.special) {
+      console.warn('[TTS] No text in request')
+      return null
+    }
+
+    // MiniMax Speech: custom API, bypass standard provider pipeline
+    if (activeSpeechProvider.value === 'minimax-speech') {
+      console.log('[TTS] Using MiniMax speech')
+      try {
+        const providerConfig = providersStore.getProviderConfig(activeSpeechProvider.value)
+        console.log('[TTS] MiniMax config:', { voiceId: providerConfig?.voiceId, hasApiKey: !!providerConfig?.apiKey, hasGroupId: !!providerConfig?.groupId })
+        const res = await generateSpeechMiniMax({
+          text: request.text,
+          voiceId: (providerConfig?.voiceId as string) || activeSpeechVoice.value?.id || 'Calm_Woman',
+          apiKey: providerConfig?.apiKey as string | undefined,
+          groupId: providerConfig?.groupId as string | undefined,
+        })
+        console.log('[TTS] MiniMax response byteLength:', res?.byteLength)
+        if (signal.aborted || !res || res.byteLength === 0)
+          return null
+        return await audioContext.decodeAudioData(res)
+      }
+      catch (err) {
+        console.error('[MiniMax TTS] Error:', err)
+        return null
+      }
+    }
 
     const provider = await providersStore.getProviderInstance(activeSpeechProvider.value) as SpeechProviderWithExtraOptions<string, UnElevenLabsOptions>
     if (!provider) {
       console.error('Failed to initialize speech provider')
       return null
     }
-
-    if (!request.text && !request.special)
-      return null
 
     const providerConfig = providersStore.getProviderConfig(activeSpeechProvider.value)
 
