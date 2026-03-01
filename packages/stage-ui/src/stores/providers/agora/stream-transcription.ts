@@ -144,11 +144,9 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
 
     const language = options.language || 'en-US'
     const localUid = options.localUid || String(Math.floor(Math.random() * 100000) + 1000)
-    const subBotUid = options.subBotUid || '2'
-    const pubBotUid = options.pubBotUid || '3'
+    const botUid = options.subBotUid || '9001'
     const token = options.token || null
-    const subBotToken = options.subBotToken || undefined
-    const pubBotToken = options.pubBotToken || undefined
+    const botToken = options.subBotToken || options.pubBotToken || undefined
     // Use fixed channel name when token is provided (tokens are bound to channel names)
     const channelName = options.channelName || (token ? 'airi-stt' : `airi-stt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
 
@@ -206,8 +204,20 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
       })
     }
 
+    // Debug: track remote users joining/leaving
+    client.on('user-joined', (user) => {
+      console.info('Agora STT: remote user joined:', user.uid)
+    })
+    client.on('user-left', (user, reason) => {
+      console.info('Agora STT: remote user left:', user.uid, reason)
+    })
+    client.on('user-published', (user, mediaType) => {
+      console.info('Agora STT: remote user published:', user.uid, mediaType)
+    })
+
     // Listen for data messages from STT publisher bot
     client.on('stream-message', (_uid: number, data: Uint8Array) => {
+      console.info('Agora STT: raw stream-message from uid:', _uid, 'size:', data.byteLength)
       try {
         const jsonStr = new TextDecoder().decode(data)
         const msg: AgoraSTTMessage = JSON.parse(jsonStr)
@@ -257,10 +267,10 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
       maxIdleTime: 60,
       rtcConfig: {
         channelName,
-        subBotUid,
-        pubBotUid,
-        subBotToken,
-        pubBotToken,
+        subBotUid: botUid,
+        pubBotUid: botUid,
+        subBotToken: botToken,
+        pubBotToken: botToken,
         subscribeAudioUids: [localUid],
         enableJsonProtocol: true,
       },

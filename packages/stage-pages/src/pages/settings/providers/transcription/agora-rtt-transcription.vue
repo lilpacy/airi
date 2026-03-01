@@ -83,6 +83,13 @@ const credentials = reactive({
     ensureProviderCredentials()
     providers.value[providerId].channelName = value
   },
+  get botToken() {
+    return providers.value[providerId]?.botToken || ''
+  },
+  set botToken(value: string) {
+    ensureProviderCredentials()
+    providers.value[providerId].botToken = value
+  },
 })
 
 function ensureProviderCredentials() {
@@ -94,6 +101,7 @@ function ensureProviderCredentials() {
       language: 'en-US',
       token: '',
       channelName: '',
+      botToken: '',
     }
   }
 }
@@ -391,6 +399,13 @@ onBeforeUnmount(async () => {
             v-model="credentials.channelName"
             label="Channel Name (optional)"
             placeholder="airi-stt (must match the token's channel)"
+          />
+
+          <FieldInput
+            v-model="credentials.botToken"
+            label="Bot RTC Token (optional)"
+            type="password"
+            placeholder="Token for STT bot UID 9001"
           />
         </ProviderBasicSettings>
 
