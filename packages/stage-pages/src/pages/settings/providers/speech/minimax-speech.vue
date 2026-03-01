@@ -34,6 +34,15 @@ const availableVoices = computed(() => {
   return speechStore.availableVoices[providerId] || []
 })
 
+const selectedVoiceId = computed({
+  get: () => providers.value[providerId]?.voiceId as string | undefined || 'Calm_Woman',
+  set: (value) => {
+    if (!providers.value[providerId])
+      providers.value[providerId] = {}
+    providers.value[providerId].voiceId = value
+  },
+})
+
 function setAsActiveProvider() {
   activeSpeechProvider.value = providerId
 }
@@ -88,7 +97,9 @@ watch(providers, async () => {
         :available-voices="availableVoices"
         :generate-speech="handleGenerateSpeech"
         :api-key-configured="apiKeyConfigured"
+        :initial-voice="selectedVoiceId"
         default-text="Hello! This is a test of the MiniMax voice synthesis."
+        @update:voice="selectedVoiceId = $event"
       />
     </template>
   </SpeechProviderSettings>

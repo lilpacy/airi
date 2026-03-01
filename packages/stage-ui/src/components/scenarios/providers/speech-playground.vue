@@ -20,6 +20,13 @@ const props = defineProps<{
   // Current state
   apiKeyConfigured?: boolean
   voicesLoading?: boolean
+
+  // Persisted voice selection
+  initialVoice?: string
+}>()
+
+const emit = defineEmits<{
+  'update:voice': [voice: string]
 }>()
 
 const { t } = useI18n()
@@ -39,11 +46,31 @@ watch(
   () => props.availableVoices,
   (newVoices) => {
     if (newVoices.length > 0 && !selectedVoice.value) {
-      selectedVoice.value = newVoices[0]?.id || ''
+      // Prefer the persisted initialVoice, fall back to first voice
+      const preferred = props.initialVoice && newVoices.find(v => v.id === props.initialVoice)
+      selectedVoice.value = preferred ? preferred.id : (newVoices[0]?.id || '')
     }
   },
   { immediate: true },
 )
+
+// Restore persisted voice when initialVoice changes (e.g. on mount)
+watch(
+  () => props.initialVoice,
+  (voiceId) => {
+    if (voiceId && props.availableVoices.find(v => v.id === voiceId)) {
+      selectedVoice.value = voiceId
+    }
+  },
+  { immediate: true },
+)
+
+// Emit voice changes so parent can persist the selection
+watch(selectedVoice, (voiceId) => {
+  if (voiceId) {
+    emit('update:voice', voiceId)
+  }
+})
 
 const voiceOptions = computed(() => {
   return props.availableVoices.map(voice => ({
