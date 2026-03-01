@@ -613,6 +613,81 @@ export const useHearingSpeechInputPipeline = defineStore('modules:hearing:speech
       }
 
       const abortController = new AbortController()
+
+      // Agora RTT manages its own RTC channel + mic track internally.
+      // Skip creating a redundant AudioContext + WorkletNode audio pipeline
+      // to avoid dual mic capture and potential platform conflicts.
+      const selfManagedMic = providerId === 'agora-rtt-transcription'
+
+      if (selfManagedMic) {
+        const model = activeTranscriptionModel.value
+        // Dispose any stale cached instance so fresh credentials/tokens are used
+        await providersStore.disposeProviderInstance(providerId)
+        const freshProvider = await providersStore.getProviderInstance<TranscriptionProviderWithExtraOptions<string, any>>(providerId)
+        if (!freshProvider)
+          throw new Error('Failed to re-initialize Agora RTT provider')
+
+        const result = await hearingStore.transcription(
+          providerId,
+          freshProvider,
+          model,
+          { inputAudioStream: new ReadableStream<ArrayBuffer>() }, // dummy — Agora creates its own mic
+          undefined,
+          {
+            providerOptions: {
+              abortSignal: abortController.signal,
+              ...options?.providerOptions,
+            },
+          },
+        )
+
+        streamingSession.value = {
+          audioContext: {} as AudioContext,
+          workletNode: {} as AudioWorkletNode,
+          mediaStreamSource: {} as MediaStreamAudioSourceNode,
+          audioStreamController: undefined,
+          abortController,
+          result,
+          idleTimer: undefined, // No idle timer — Agora has its own maxIdleTime
+          providerId,
+          callbacks: {
+            onSentenceEnd: options?.onSentenceEnd,
+            onSpeechEnd: options?.onSpeechEnd,
+          },
+        }
+
+        // Wire textStream reader for real-time callbacks
+        if (result.mode === 'stream' && result.textStream) {
+          void (async () => {
+            const sessionCallbacks = {
+              onSentenceEnd: streamingSession.value?.callbacks?.onSentenceEnd,
+              onSpeechEnd: streamingSession.value?.callbacks?.onSpeechEnd,
+            }
+            let fullText = ''
+            try {
+              const reader = result.textStream.getReader()
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done)
+                  break
+                if (value) {
+                  fullText += value
+                  sessionCallbacks.onSentenceEnd?.(value)
+                }
+              }
+            }
+            catch (err) {
+              console.error('Error reading Agora text stream:', err)
+            }
+            finally {
+              sessionCallbacks.onSpeechEnd?.(fullText)
+            }
+          })()
+        }
+
+        return
+      }
+
       let idleTimer: ReturnType<typeof setTimeout> | undefined
       const bumpIdle = () => {
         if (idleTimer)
