@@ -88,6 +88,9 @@ components.d.ts
 .envrc
 .devenv*
 devenv.*
+.env
+.env.local
+.env.*.local
 
 # Rust
 target/

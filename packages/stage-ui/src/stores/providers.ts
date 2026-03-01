@@ -187,7 +187,11 @@ export interface ProviderRuntimeState {
 }
 
 export const useProvidersStore = defineStore('providers', () => {
-  const providerCredentials = useLocalStorage<Record<string, Record<string, unknown>>>('settings/credentials/providers', {})
+  const providerCredentialsDefault: Record<string, Record<string, unknown>> = {}
+  if (import.meta.env.VITE_OPENAI_API_KEY) {
+    providerCredentialsDefault.openai = { apiKey: import.meta.env.VITE_OPENAI_API_KEY }
+  }
+  const providerCredentials = useLocalStorage<Record<string, Record<string, unknown>>>('settings/credentials/providers', providerCredentialsDefault)
   const addedProviders = useLocalStorage<Record<string, boolean>>('settings/providers/added', {})
   const providerInstanceCache = ref<Record<string, unknown>>({})
   const { t } = useI18n()
@@ -1600,6 +1604,45 @@ export const useProvidersStore = defineStore('providers', () => {
             reason: '',
             valid: true,
           }
+        },
+      },
+    },
+    'minimax-speech': {
+      id: 'minimax-speech',
+      category: 'speech',
+      tasks: ['text-to-speech'],
+      nameKey: 'settings.pages.providers.provider.minimax.title',
+      name: 'MiniMax Speech',
+      descriptionKey: 'settings.pages.providers.provider.minimax.description',
+      description: 'minimax.io',
+      icon: 'i-lobe-icons:minimax',
+      defaultOptions: () => ({
+        apiKey: import.meta.env.VITE_MINIMAX_API_KEY || '',
+        groupId: import.meta.env.VITE_MINIMAX_GROUP_ID || '',
+        voiceId: 'Calm_Woman',
+        baseUrl: 'https://api.minimax.io/v1/',
+      }),
+      createProvider: async (_config) => {
+        // MiniMax uses a custom API, handled directly in Stage.vue
+        return {} as any
+      },
+      capabilities: {
+        listVoices: async (_config) => {
+          return [
+            { id: 'Calm_Woman', name: 'Calm Woman', provider: 'minimax-speech', previewURL: '', languages: [{ code: 'en', title: 'English' }], gender: 'female' },
+            { id: 'Lovely_Girl', name: 'Lovely Girl', provider: 'minimax-speech', previewURL: '', languages: [{ code: 'en', title: 'English' }], gender: 'female' },
+            { id: 'Lively_Girl', name: 'Lively Girl', provider: 'minimax-speech', previewURL: '', languages: [{ code: 'en', title: 'English' }], gender: 'female' },
+            { id: 'Sweet_Girl_2', name: 'Sweet Girl', provider: 'minimax-speech', previewURL: '', languages: [{ code: 'en', title: 'English' }], gender: 'female' },
+            { id: 'Wise_Woman', name: 'Wise Woman', provider: 'minimax-speech', previewURL: '', languages: [{ code: 'en', title: 'English' }], gender: 'female' },
+          ]
+        },
+      },
+      validators: {
+        validateProviderConfig: async (config) => {
+          if (!config.apiKey || !config.groupId) {
+            return { errors: [new Error('API Key and Group ID are required.')], reason: 'API Key and Group ID are required.', valid: false }
+          }
+          return { errors: [], reason: '', valid: true }
         },
       },
     },
