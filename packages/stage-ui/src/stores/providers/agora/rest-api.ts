@@ -14,6 +14,7 @@ export interface AgoraSTTCredentials {
 }
 
 export interface AgoraJoinRequest {
+  name: string
   languages: string[]
   maxIdleTime?: number
   rtcConfig: {

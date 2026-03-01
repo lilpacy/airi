@@ -252,6 +252,7 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
 
     // Start STT agent via REST API
     const joinResponse = await agoraSTTJoin(credentials, {
+      name: `airi-stt-${Date.now()}`,
       languages: [language],
       maxIdleTime: 60,
       rtcConfig: {
