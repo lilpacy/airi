@@ -350,6 +350,7 @@ function decodeProtobufText(buf: Uint8Array): AgoraSTTMessage {
 export interface AgoraStreamTranscriptionExtraOptions {
   credentials: AgoraSTTCredentials
   language?: string
+  languages?: string[]
   abortSignal?: AbortSignal
   /** RTC token for the local user (required when App Certificate is enabled) */
   token?: string
@@ -381,6 +382,7 @@ export interface AgoraStreamTranscriptionOptions {
   file?: Blob
   credentials?: AgoraSTTCredentials
   language?: string
+  languages?: string[]
   token?: string
   channelName?: string
   localUid?: string
@@ -417,6 +419,7 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
     }
 
     const language = options.language || 'en-US'
+    const languages = options.languages && options.languages.length > 0 ? options.languages : [language]
     const localUid = options.localUid || String(Math.floor(Math.random() * 100000) + 1000)
     const botUid = options.subBotUid || '9001'
     const token = options.token || null
@@ -543,7 +546,7 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
     // Start STT agent via REST API
     const joinResponse = await agoraSTTJoin(credentials, {
       name: `airi-stt-${Date.now()}`,
-      languages: [language],
+      languages,
       maxIdleTime: 60,
       rtcConfig: {
         channelName,

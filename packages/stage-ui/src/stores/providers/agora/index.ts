@@ -16,7 +16,7 @@ export function createAgoraRTTProvider(
   appId: string,
   customerId: string,
   customerSecret: string,
-  options?: { language?: string, token?: string, channelName?: string, botToken?: string },
+  options?: { language?: string, languages?: string[], token?: string, channelName?: string, botToken?: string },
 ): TranscriptionProviderWithExtraOptions<string, AgoraStreamTranscriptionExtraOptions> {
   return {
     transcription: (model: string, extraOptions?: AgoraStreamTranscriptionExtraOptions) => {
@@ -32,6 +32,7 @@ export function createAgoraRTTProvider(
           customerSecret,
         },
         language: extraOptions?.language || options?.language || 'en-US',
+        languages: extraOptions?.languages || options?.languages,
         token: extraOptions?.token || options?.token || undefined,
         channelName: extraOptions?.channelName || options?.channelName || undefined,
         abortSignal: extraOptions?.abortSignal,

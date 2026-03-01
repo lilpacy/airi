@@ -13,7 +13,7 @@ import {
 import { useProviderValidation } from '@proj-airi/stage-ui/composables/use-provider-validation'
 import { useHearingStore } from '@proj-airi/stage-ui/stores/modules/hearing'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
-import { Button, FieldInput, FieldSelect } from '@proj-airi/ui'
+import { Button, FieldInput } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
 
@@ -33,6 +33,8 @@ const languageOptions = [
   { label: 'Portuguese (Brazil)', value: 'pt-BR' },
   { label: 'Italian', value: 'it-IT' },
 ]
+
+const MAX_LANGUAGES = 2
 
 const hearingStore = useHearingStore()
 const providersStore = useProvidersStore()
@@ -62,12 +64,13 @@ const credentials = reactive({
     ensureProviderCredentials()
     providers.value[providerId].customerSecret = value
   },
-  get language() {
-    return providers.value[providerId]?.language || 'en-US'
+  get languages() {
+    const val = providers.value[providerId]?.languages
+    return Array.isArray(val) ? val : ['en-US']
   },
-  set language(value: string) {
+  set languages(value: string[]) {
     ensureProviderCredentials()
-    providers.value[providerId].language = value
+    providers.value[providerId].languages = value
   },
   get token() {
     return providers.value[providerId]?.token || ''
@@ -98,7 +101,7 @@ function ensureProviderCredentials() {
       appId: '',
       customerId: '',
       customerSecret: '',
-      language: 'en-US',
+      languages: ['en-US'],
       token: '',
       channelName: '',
       botToken: '',
@@ -381,12 +384,40 @@ onBeforeUnmount(async () => {
             placeholder="****************"
           />
 
-          <FieldSelect
-            v-model="credentials.language"
-            label="Language"
-            :options="languageOptions"
-            layout="vertical"
-          />
+          <div flex="~ col gap-2">
+            <div text-sm font-medium>
+              Languages <span text="xs neutral-400">(up to {{ MAX_LANGUAGES }})</span>
+            </div>
+            <div flex="~ col gap-1.5">
+              <label
+                v-for="opt in languageOptions"
+                :key="opt.value"
+                flex="~ row gap-2" cursor-pointer items-center
+              >
+                <input
+                  type="checkbox"
+                  :value="opt.value"
+                  :checked="credentials.languages.includes(opt.value)"
+                  :disabled="!credentials.languages.includes(opt.value) && credentials.languages.length >= MAX_LANGUAGES"
+                  @change="(e) => {
+                    const checked = (e.target as HTMLInputElement).checked
+                    if (checked && credentials.languages.length < MAX_LANGUAGES) {
+                      credentials.languages = [...credentials.languages, opt.value]
+                    }
+                    else if (!checked) {
+                      credentials.languages = credentials.languages.filter(l => l !== opt.value)
+                    }
+                  }"
+                >
+                <span text-sm :class="!credentials.languages.includes(opt.value) && credentials.languages.length >= MAX_LANGUAGES ? 'text-neutral-400' : ''">
+                  {{ opt.label }}
+                </span>
+              </label>
+            </div>
+            <div v-if="credentials.languages.length === 0" text="xs red-500">
+              At least one language is required
+            </div>
+          </div>
 
           <FieldInput
             v-model="credentials.token"
