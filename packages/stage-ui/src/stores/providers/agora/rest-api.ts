@@ -24,7 +24,6 @@ export interface AgoraJoinRequest {
     subBotToken?: string
     pubBotToken?: string
     subscribeAudioUids?: string[]
-    enableJsonProtocol?: boolean
   }
   translateConfig?: {
     languages: Array<{ source: string, target: string[] }>
