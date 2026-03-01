@@ -82,8 +82,16 @@ export interface AgoraStreamTranscriptionExtraOptions {
   credentials: AgoraSTTCredentials
   language?: string
   abortSignal?: AbortSignal
+  /** RTC token for the local user (required when App Certificate is enabled) */
+  token?: string
+  /** Fixed channel name (required when using a token generated from Agora Console) */
+  channelName?: string
   /** UID for the local user in the RTC channel */
   localUid?: string
+  /** RTC token for the STT subscriber bot */
+  subBotToken?: string
+  /** RTC token for the STT publisher bot */
+  pubBotToken?: string
   /** UID for the STT subscriber bot */
   subBotUid?: string
   /** UID for the STT publisher bot */
@@ -100,7 +108,11 @@ export interface AgoraStreamTranscriptionOptions {
   file?: Blob
   credentials?: AgoraSTTCredentials
   language?: string
+  token?: string
+  channelName?: string
   localUid?: string
+  subBotToken?: string
+  pubBotToken?: string
   subBotUid?: string
   pubBotUid?: string
 }
@@ -134,7 +146,11 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
     const localUid = options.localUid || String(Math.floor(Math.random() * 100000) + 1000)
     const subBotUid = options.subBotUid || '2'
     const pubBotUid = options.pubBotUid || '3'
-    const channelName = `airi-stt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const token = options.token || null
+    const subBotToken = options.subBotToken || undefined
+    const pubBotToken = options.pubBotToken || undefined
+    // Use fixed channel name when token is provided (tokens are bound to channel names)
+    const channelName = options.channelName || (token ? 'airi-stt' : `airi-stt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
 
     // Dynamically import Agora RTC SDK (browser-only)
     const AgoraRTC = (await import('agora-rtc-sdk-ng')).default
@@ -223,8 +239,8 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
     })
 
     // Join RTC channel
-    console.info('Agora STT: joining channel', channelName, 'as UID', localUid)
-    await client.join(credentials.appId, channelName, null, Number(localUid))
+    console.info('Agora STT: joining channel', channelName, 'as UID', localUid, 'with token:', token ? 'yes' : 'no')
+    await client.join(credentials.appId, channelName, token, Number(localUid))
     console.info('Agora STT: joined channel successfully')
 
     // Create and publish microphone track
@@ -242,6 +258,8 @@ export function streamAgoraTranscription(options: AgoraStreamTranscriptionOption
         channelName,
         subBotUid,
         pubBotUid,
+        subBotToken,
+        pubBotToken,
         subscribeAudioUids: [localUid],
         enableJsonProtocol: true,
       },

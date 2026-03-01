@@ -700,6 +700,8 @@ export const useProvidersStore = defineStore('providers', () => {
         customerId: '',
         customerSecret: '',
         language: 'en-US',
+        token: '',
+        channelName: '',
       }),
       transcriptionFeatures: {
         supportsGenerate: false,
@@ -713,12 +715,14 @@ export const useProvidersStore = defineStore('providers', () => {
         const customerId = toString(config.customerId)
         const customerSecret = toString(config.customerSecret)
         const language = toString(config.language) || 'en-US'
+        const token = toString(config.token) || undefined
+        const channelName = toString(config.channelName) || undefined
 
         if (!appId || !customerId || !customerSecret)
           throw new Error('Agora RTT credentials are incomplete.')
 
         const { createAgoraRTTProvider } = await import('./providers/agora')
-        return createAgoraRTTProvider(appId, customerId, customerSecret, { language })
+        return createAgoraRTTProvider(appId, customerId, customerSecret, { language, token, channelName })
       },
       capabilities: {
         listModels: async () => {

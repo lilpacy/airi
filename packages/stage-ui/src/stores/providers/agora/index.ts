@@ -16,7 +16,7 @@ export function createAgoraRTTProvider(
   appId: string,
   customerId: string,
   customerSecret: string,
-  options?: { language?: string },
+  options?: { language?: string, token?: string, channelName?: string },
 ): TranscriptionProviderWithExtraOptions<string, AgoraStreamTranscriptionExtraOptions> {
   return {
     transcription: (model: string, extraOptions?: AgoraStreamTranscriptionExtraOptions) => {
@@ -24,20 +24,20 @@ export function createAgoraRTTProvider(
         baseURL: 'https://api.agora.io',
         model: model || 'agora-rtt-v1',
         fetch: async () => {
-          // Agora STT does not use HTTP fetch for transcription —
-          // it uses RTC data messages. This is a placeholder to satisfy the interface.
-          // The actual streaming is handled by streamAgoraTranscription.
           throw new Error('Agora RTT does not support direct fetch-based transcription. Use the streaming API.')
         },
-        // Pass credentials and options through for streamAgoraTranscription to use
         credentials: {
           appId,
           customerId,
           customerSecret,
         },
         language: extraOptions?.language || options?.language || 'en-US',
+        token: extraOptions?.token || options?.token || undefined,
+        channelName: extraOptions?.channelName || options?.channelName || undefined,
         abortSignal: extraOptions?.abortSignal,
         localUid: extraOptions?.localUid,
+        subBotToken: extraOptions?.subBotToken,
+        pubBotToken: extraOptions?.pubBotToken,
         subBotUid: extraOptions?.subBotUid,
         pubBotUid: extraOptions?.pubBotUid,
       } as any

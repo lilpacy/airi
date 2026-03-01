@@ -69,6 +69,20 @@ const credentials = reactive({
     ensureProviderCredentials()
     providers.value[providerId].language = value
   },
+  get token() {
+    return providers.value[providerId]?.token || ''
+  },
+  set token(value: string) {
+    ensureProviderCredentials()
+    providers.value[providerId].token = value
+  },
+  get channelName() {
+    return providers.value[providerId]?.channelName || ''
+  },
+  set channelName(value: string) {
+    ensureProviderCredentials()
+    providers.value[providerId].channelName = value
+  },
 })
 
 function ensureProviderCredentials() {
@@ -78,6 +92,8 @@ function ensureProviderCredentials() {
       customerId: '',
       customerSecret: '',
       language: 'en-US',
+      token: '',
+      channelName: '',
     }
   }
 }
@@ -360,6 +376,19 @@ onBeforeUnmount(async () => {
             label="Language"
             :options="languageOptions"
             layout="vertical"
+          />
+
+          <FieldInput
+            v-model="credentials.token"
+            label="RTC Token (optional)"
+            type="password"
+            placeholder="Temporary token from Agora Console"
+          />
+
+          <FieldInput
+            v-model="credentials.channelName"
+            label="Channel Name (optional)"
+            placeholder="airi-stt (must match the token's channel)"
           />
         </ProviderBasicSettings>
 
